@@ -12,7 +12,7 @@ pub struct Codegen {
 
 impl Codegen {
   fn emit_for_current_instruction (&mut self) {
-    let instr = &self.code[self.code_index];
+    let instr = &self.code[self.code_index - 1];
 
     // TODO: Repeated instructions like left, right, inc and dec
     //   can be batched into one operation.
@@ -28,6 +28,17 @@ impl Codegen {
       Instruction::LoopStart => self.emit_for_loop_start(),
       Instruction::LoopEnd => self.emit_for_loop_end(),
     }
+  }
+
+  fn swallow_and_count_repeating (&mut self, instr: Instruction) -> usize {
+    let mut count = 0;
+    while self.code_index < self.code.len() {
+      if self.code[self.code_index] == instr {
+        count += 1;
+        self.code_index += 1;
+      } else { break }
+    }
+    count
   }
 
   fn emit_for_loop_start (&mut self) {
@@ -79,17 +90,19 @@ pop %r8")
   }
 
   fn emit_for_increment (&mut self) {
+    let repeated_incs = 1 + self.swallow_and_count_repeating(Instruction::Increment);
     self.emit("
-mov (%r8), %rax
-inc %rax
-mov %rax, (%r8)")
+mov (%r8), %rax");
+    self.emit(&format!("\nadd ${}, %rax", repeated_incs)[..]);
+    self.emit("\nmov %rax, (%r8)")
   }
 
   fn emit_for_decrement (&mut self) {
+    let repeated_decs = 1 + self.swallow_and_count_repeating(Instruction::Decrement);
     self.emit("
-mov (%r8), %rax
-dec %rax
-mov %rax, (%r8)")
+mov (%r8), %rax");
+    self.emit(&format!("\nsub ${}, %rax", repeated_decs)[..]);
+    self.emit("\nmov %rax, (%r8)")
   }
 
   fn emit_program_prelude (&mut self) {
@@ -122,8 +135,8 @@ ret")
   pub fn generate(&mut self) {
     self.emit_program_prelude();
     while self.code_index < self.code.len() {
-      self.emit_for_current_instruction();
       self.code_index += 1;
+      self.emit_for_current_instruction();
     }
     self.emit_program_epilogue();
   }
