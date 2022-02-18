@@ -5,6 +5,8 @@ pub struct Codegen {
   code: Vec<Instruction>,
   code_index: usize,
   label_index: usize,
+  loop_index: usize,
+  open_loops: Vec<usize>,
   pub output: String
 }
 
@@ -12,6 +14,10 @@ impl Codegen {
   fn emit_for_current_instruction (&mut self) {
     let instr = &self.code[self.code_index];
 
+    // TODO: Repeated instructions like left, right, inc and dec
+    //   can be batched into one operation.
+    // TODO: We can look for common operations such as [-], and
+    //   turn them into "set 0"
     match instr {
       Instruction::Left => self.emit("\nadd $8, %r8"),
       Instruction::Right => self.emit_for_right(),
@@ -19,8 +25,26 @@ impl Codegen {
       Instruction::Decrement => self.emit_for_decrement(),
       Instruction::Output => self.emit_for_output(),
       Instruction::Input => self.emit_for_input(),
-      _ => unimplemented!()
+      Instruction::LoopStart => self.emit_for_loop_start(),
+      Instruction::LoopEnd => self.emit_for_loop_end(),
     }
+  }
+
+  fn emit_for_loop_start (&mut self) {
+    self.emit("
+cmpq $0, (%r8)");
+    self.emit(&format!("\nje _lbl_end_{}", self.loop_index)[..]);
+    self.emit(&format!("\n_lbl_start_{}:", self.loop_index)[..]);
+    self.open_loops.push(self.loop_index);
+    self.loop_index += 1;
+  }
+
+  fn emit_for_loop_end (&mut self) {
+    let to_close = self.open_loops.pop().unwrap();
+    self.emit("
+cmpq $0, (%r8)");
+    self.emit(&format!("\njne _lbl_start_{}", to_close)[..]);
+    self.emit(&format!("\n_lbl_end_{}:", to_close)[..]);
   }
 
   fn emit_for_input (&mut self) {
@@ -109,6 +133,8 @@ ret")
       code, 
       code_index: 0,
       label_index: 0,
+      loop_index: 0,
+      open_loops: vec![],
       output: String::new() 
     }
   }
