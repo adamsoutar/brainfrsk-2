@@ -14,12 +14,10 @@ impl Codegen {
   fn emit_for_current_instruction (&mut self) {
     let instr = &self.code[self.code_index - 1];
 
-    // TODO: Repeated instructions like left, right, inc and dec
-    //   can be batched into one operation.
     // TODO: We can look for common operations such as [-], and
     //   turn them into "set 0"
     match instr {
-      Instruction::Left => self.emit("\nadd $8, %r8"),
+      Instruction::Left => self.emit_for_left(),
       Instruction::Right => self.emit_for_right(),
       Instruction::Increment => self.emit_for_increment(),
       Instruction::Decrement => self.emit_for_decrement(),
@@ -39,6 +37,11 @@ impl Codegen {
       } else { break }
     }
     count
+  }
+
+  fn emit_for_left (&mut self) {
+    let repeated_lefts = 1 + self.swallow_and_count_repeating(Instruction::Left);
+    self.emit(&format!("\nadd ${}, %r8", 8 * repeated_lefts)[..])
   }
 
   fn emit_for_loop_start (&mut self) {
@@ -69,6 +72,10 @@ mov %rax, (%r8)")
   fn emit_for_right (&mut self) {
     // This right operator automagically expands the tape when you
     // go further right than you ever have before.
+    // TODO: Due to this memory management solution, we are not currently
+    //   able to batch right operations. We _could_ with some clever asm
+    //   maths to calculate the difference between %rsp and %r8 and multiplying
+    //   that by 8, but we will not implement that for now.
     let lbl = self.get_unique_label();
     self.emit("
 sub $8, %r8
