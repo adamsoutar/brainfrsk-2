@@ -1,18 +1,50 @@
-# brainfrsk
+# brainfrsk 2
 
-A Rust brainf\*ck interpreter.
+An optimising Brainf\*ck to x86-64 assembly compiler.
 
-This is my first program in the Rust language, and I found it very
-interesting ("fighting the borrow checker" for the first time etc).
+This compiler can produce optimised binaries for macOS (Sytem V 
+calling convention) by outputting AMD64 asm (similar to [my other project](https://github.com/adamsoutar/ass)).
 
-It seems to work with simple programs, for example, it can run the
-current world record 'Hello, World!' program.
+## Speed
 
-However, there are definitely a few small isues, such as it doesn't
-seem to output (flush stdout?) until the program is over, so
-infinitely running programs like cat don't print anything.
+I've written several Brainf\*ck projects over the years.
 
-As my first Rust code, please excuse the code quality or any 
-bodges required to get the program running, and if you have any
-tips (eg. I don't think [this](https://github.com/adamsoutar/brainfrsk/blob/master/src/vm.rs#L35) is the idiomatic way to do the 
-iterator in `bracket_match`), they'd be greatly appreciated.
+Here's a comparison of the execution time for a "Hello world!" program in each:
+
+| Project | Implementation | Time | Ratio |
+| ------- | -------------- | ---- | ----- |
+| [brainfJSk](https://github.com/adamsoutar/brainfJSk) | JS Interpreter | 0.073s| 1x |
+| [brainGoop](https://github.com/adamsoutar/brainGoop) | Go Interpreter | 0.009s| 8x  |
+| [brainfrsk 1](https://github.com/adamsoutar/brainfrsk) | Rust Interpreter | 0.008s | 9x |
+| brainfrsk 2 | Rust Compiler | 0.003s | **24x** 🤯 |
+
+
+## Try it yourself
+
+```
+git clone https://github.com/adamsoutar/brainfrsk-2
+cd brainfrsk-2
+./compile.sh
+```
+
+This (assuming you're on macOS) will produce and run an output binary at `./output`.
+
+## Optimisations
+
+More than just being written in pure assembly code, the compiler 
+makes your code faster by batching repeated operations into one.
+
+For example, `+++++` is re-written as `add 5`.
+
+## Tape size & limits
+
+The tape is automatically expanded (it's "unlimited"). Cells are 64-bit
+integers.
+
+Memory is automatically allocated on the stack. This _technically_ 
+means the tape is limited by the stack size. On macOS that is
+`8mb`, a.k.a 1 _million_ cells.
+
+----
+
+<h6 align="center">by Adam Soutar</h6>
