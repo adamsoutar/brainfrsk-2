@@ -13,20 +13,27 @@ impl Codegen {
     let instr = &self.code[self.code_index];
 
     match instr {
-      Instruction::Left => self.emit("\ninc %r8"),
+      Instruction::Left => self.emit("\nadd $8, %r8"),
       Instruction::Right => self.emit_for_right(),
       Instruction::Increment => self.emit_for_increment(),
       Instruction::Decrement => self.emit_for_decrement(),
       Instruction::Output => self.emit_for_output(),
+      Instruction::Input => self.emit_for_input(),
       _ => unimplemented!()
     }
   }
 
+  fn emit_for_input (&mut self) {
+
+  }
+
   fn emit_for_right (&mut self) {
+    // This right operator automagically expands the tape when you
+    // go further right than you ever have before.
     let lbl = self.get_unique_label();
     self.emit("
-dec %r8
-cmp %r8, %rsp");
+sub $8, %r8
+cmp %rsp, %r8");
     self.emit(&format!("
 jnb {}", lbl)[..]);
     self.emit("
