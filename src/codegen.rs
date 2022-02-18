@@ -24,7 +24,11 @@ impl Codegen {
   }
 
   fn emit_for_input (&mut self) {
-
+    self.emit("
+push %r8
+call _getchar
+pop %r8
+mov %rax, (%r8)")
   }
 
   fn emit_for_right (&mut self) {
