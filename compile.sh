@@ -1,13 +1,12 @@
-# Run ass
+# Run brainfrsk
 RUST_BACKTRACE=1 cargo run input.bf > output.s && \
 
 # Assemble x86_64 assembly into a binary
-# (ass is _not_ an assembler or linker)
+# (It is _not_ an assembler or linker)
 gcc output.s -o output && \
 
 # Run output
 ./output
 
-# Print exit code
-# (not as relevant now that we can call putchar())
+# Print last cell value
 # echo $?
