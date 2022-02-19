@@ -10,6 +10,11 @@ If you go further than r9, we will zero the memory where you are
 This avoids the issue of running into garbage memory above the stack.
 
 Scratch that, we don't need r9, we can use the stack ptr.
-All of this gives us *near unlimited* memory tape, in the 0+ 
+All of this gives us _near unlimited_ memory tape, in the 0+
 direction. It will, however, be limited by stack space
 (8mb on macOS - that's 1 million cells)
+
+I think we can switch from r8 to r12, which is a callee-saved register.
+This would allow us to drop 2 stack instructions per input/output.
+But _would_ this make us faster? Hopefully the called funcs only save r12-r15
+if they need to clobber them.

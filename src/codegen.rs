@@ -41,12 +41,12 @@ impl Codegen {
 
   fn emit_for_left (&mut self) {
     let repeated_lefts = 1 + self.swallow_and_count_repeating(Instruction::Left);
-    self.emit(&format!("\nadd ${}, %r8", 8 * repeated_lefts)[..])
+    self.emit(&format!("\nadd ${}, %r12", 8 * repeated_lefts)[..])
   }
 
   fn emit_for_loop_start (&mut self) {
     self.emit("
-cmpq $0, (%r8)");
+cmpq $0, (%r12)");
     self.emit(&format!("\nje _lbl_end_{}", self.loop_index)[..]);
     self.emit(&format!("\n_lbl_start_{}:", self.loop_index)[..]);
     self.open_loops.push(self.loop_index);
@@ -56,17 +56,15 @@ cmpq $0, (%r8)");
   fn emit_for_loop_end (&mut self) {
     let to_close = self.open_loops.pop().unwrap();
     self.emit("
-cmpq $0, (%r8)");
+cmpq $0, (%r12)");
     self.emit(&format!("\njne _lbl_start_{}", to_close)[..]);
     self.emit(&format!("\n_lbl_end_{}:", to_close)[..]);
   }
 
   fn emit_for_input (&mut self) {
     self.emit("
-push %r8
 call _getchar
-pop %r8
-mov %rax, (%r8)")
+mov %rax, (%r12)")
   }
 
   fn emit_for_right (&mut self) {
@@ -74,12 +72,12 @@ mov %rax, (%r8)")
     // go further right than you ever have before.
     // TODO: Due to this memory management solution, we are not currently
     //   able to batch right operations. We _could_ with some clever asm
-    //   maths to calculate the difference between %rsp and %r8 and multiplying
+    //   maths to calculate the difference between %rsp and %r12 and multiplying
     //   that by 8, but we will not implement that for now.
     let lbl = self.get_unique_label();
     self.emit("
-sub $8, %r8
-cmp %rsp, %r8");
+sub $8, %r12
+cmp %rsp, %r12");
     self.emit(&format!("
 jnb {}", lbl)[..]);
     self.emit("
@@ -90,26 +88,24 @@ push $0");
 
   fn emit_for_output (&mut self) {
     self.emit("
-mov (%r8), %rdi
-push %r8
-call _putchar
-pop %r8")
+mov (%r12), %rdi
+call _putchar")
   }
 
   fn emit_for_increment (&mut self) {
     let repeated_incs = 1 + self.swallow_and_count_repeating(Instruction::Increment);
     self.emit("
-mov (%r8), %rax");
+mov (%r12), %rax");
     self.emit(&format!("\nadd ${}, %rax", repeated_incs)[..]);
-    self.emit("\nmov %rax, (%r8)")
+    self.emit("\nmov %rax, (%r12)")
   }
 
   fn emit_for_decrement (&mut self) {
     let repeated_decs = 1 + self.swallow_and_count_repeating(Instruction::Decrement);
     self.emit("
-mov (%r8), %rax");
+mov (%r12), %rax");
     self.emit(&format!("\nsub ${}, %rax", repeated_decs)[..]);
-    self.emit("\nmov %rax, (%r8)")
+    self.emit("\nmov %rax, (%r12)")
   }
 
   fn emit_program_prelude (&mut self) {
@@ -118,13 +114,13 @@ mov (%r8), %rax");
 _main:
 push %rbp
 mov %rsp, %rbp
-mov %rbp, %r8
-movq $0, (%r8)")
+mov %rbp, %r12
+movq $0, (%r12)")
   }
 
   fn emit_program_epilogue (&mut self) {
     self.emit("
-mov (%r8), %rax
+mov (%r12), %rax
 mov %rbp, %rsp
 pop %rbp
 ret")
